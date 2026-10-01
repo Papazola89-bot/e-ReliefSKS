@@ -1,28 +1,66 @@
-import Link from "next/link";
-import { AlertTriangle, CalendarDays, CheckCircle2, Sparkles, UserRoundX, UsersRound } from "lucide-react";
-import { AdminNav } from "@/components/AdminNav";
-import { MobileBottomNav } from "@/components/MobileBottomNav";
-import { absenceRows } from "@/lib/mock-data";
+import Link from 'next/link';
+import { AlertTriangle, CalendarDays, CheckCircle2, Sparkles, UserRoundX, UsersRound } from 'lucide-react';
+import { AdminNav } from '@/components/AdminNav';
+import { MobileBottomNav } from '@/components/MobileBottomNav';
+import { malaysiaDate, requireAdmin } from '@/lib/admin';
 
-export default function AdminDashboard() {
+export default async function AdminDashboard() {
+  const { supabase, profile } = await requireAdmin();
+  const today = malaysiaDate();
+
+  const [{ data: snapshot }, { data: evaluation }] = await Promise.all([
+    supabase.rpc('get_daily_availability_snapshot', {
+      p_school_id: profile.school_id,
+      p_date: today,
+    }),
+    supabase.rpc('evaluate_relief_day', {
+      p_school_id: profile.school_id,
+      p_relief_date: today,
+      p_source: 'LIVE',
+    }),
+  ]);
+
+  const rows = (snapshot ?? []) as Array<{
+    staff_id: string;
+    display_name: string;
+    relief_tier: string;
+    planned_absence: string | null;
+    live_absence: string | null;
+    availability_state: string;
+  }>;
+
+  const evalData = (evaluation ?? {}) as {
+    requires_relief?: boolean;
+    recommended_mode?: 'NORMAL' | 'BERKAMPUNG' | null;
+    total_cover_demand?: number;
+  };
+
+  const awayRows = rows.filter((r) => r.availability_state !== 'AVAILABLE');
+  const liveAbsent = rows.filter((r) => r.availability_state === 'LIVE_ABSENT').length;
+  const plannedAway = rows.filter((r) => r.availability_state === 'PLANNED_AWAY').length;
+  const available = rows.length - liveAbsent - plannedAway;
+  const modeLabel = evalData.recommended_mode === 'BERKAMPUNG' ? 'BERKAMPUNG' : evalData.recommended_mode === 'NORMAL' ? 'BIASA' : 'TIADA';
+
   return (
     <main className="adminLayout">
       <AdminNav active="Dashboard" />
       <section className="adminContent">
-        <header className="adminTop"><div><span className="eyebrow">HARI INI</span><h1>Dashboard Admin</h1><p>Ringkasan keberadaan guru dan status relief sekolah.</p></div><span className="adminChip">Admin SK Semangar</span></header>
+        <header className="adminTop"><div><span className="eyebrow">{today}</span><h1>Dashboard Admin</h1><p>Ringkasan keberadaan guru dan status relief sekolah.</p></div><span className="adminChip">Admin SK Semangar</span></header>
         <div className="kpiGrid">
-          <div className="kpi"><UsersRound /><span>Guru Hadir</span><strong>36</strong><small>Status semasa</small></div>
-          <div className="kpi"><CalendarDays /><span>Planned Away</span><strong>6</strong><small>Keberadaan terancang</small></div>
-          <div className="kpi"><UserRoundX /><span>Live Absent</span><strong>3</strong><small>Tidak hadir hari ini</small></div>
-          <div className="kpi"><Sparkles /><span>Cadangan Mode</span><strong>BIASA</strong><small>Kapasiti normal mencukupi</small></div>
+          <div className="kpi"><UsersRound /><span>Guru Hadir</span><strong>{available}</strong><small>Status semasa</small></div>
+          <div className="kpi"><CalendarDays /><span>Planned Away</span><strong>{plannedAway}</strong><small>Keberadaan terancang</small></div>
+          <div className="kpi"><UserRoundX /><span>Live Absent</span><strong>{liveAbsent}</strong><small>Tidak hadir hari ini</small></div>
+          <div className="kpi"><Sparkles /><span>Cadangan Mode</span><strong>{modeLabel}</strong><small>Berdasarkan kapasiti semasa</small></div>
         </div>
         <section className="blockCard adminBlock">
           <div className="sectionHeading"><div><h2>Senarai Guru Tidak Hadir</h2><p>Planned dan LIVE untuk hari ini.</p></div><Link href="/admin/keberadaan">Lihat semua</Link></div>
-          <div className="tableLike">{absenceRows.map((row,index)=><div className="tableRow" key={row.name}><span>{index+1}</span><strong>{row.name}</strong><span className="statusPill">{row.status}</span><span className="rowDetail">{row.detail}</span><span className="source">{row.source}</span></div>)}</div>
+          <div className="tableLike">
+            {awayRows.length === 0 ? <div className="emptyState">Tiada ketidakhadiran direkodkan hari ini.</div> : awayRows.map((row,index)=><div className="tableRow" key={row.staff_id}><span>{index+1}</span><strong>{row.display_name}</strong><span className="statusPill">{row.availability_state === 'LIVE_ABSENT' ? 'LIVE' : 'PLANNED'}</span><span className="rowDetail">{row.live_absence ?? row.planned_absence ?? '-'}</span><span className="source">{row.relief_tier}</span></div>)}
+          </div>
         </section>
         <div className="dashboardActions">
-          <section className="blockCard reliefNeed"><AlertTriangle /><span>Keperluan Relief Hari Ini</span><strong>12</strong><small>waktu perlu diisi</small></section>
-          <section className="blockCard modeCard"><CheckCircle2 /><span>Mode Dicadangkan</span><strong>Relief Biasa</strong><small>Kapasiti normal masih mencukupi.</small></section>
+          <section className="blockCard reliefNeed"><AlertTriangle /><span>Keperluan Relief Hari Ini</span><strong>{evalData.total_cover_demand ?? 0}</strong><small>waktu perlu diisi</small></section>
+          <section className="blockCard modeCard"><CheckCircle2 /><span>Mode Dicadangkan</span><strong>{modeLabel === 'BERKAMPUNG' ? 'Relief Berkampung' : modeLabel === 'BIASA' ? 'Relief Biasa' : 'Tiada Relief'}</strong><small>{evalData.requires_relief ? 'Cadangan dijana oleh Relief Orchestrator.' : 'Tiada relief diperlukan.'}</small></section>
         </div>
         <Link href="/admin/relief/new" className="button primary fabLike"><Sparkles size={18} /> Jana Relief</Link>
       </section>
