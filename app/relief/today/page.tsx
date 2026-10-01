@@ -1,12 +1,17 @@
-import { BookOpen, Building2, FlaskConical, Info } from "lucide-react";
-import { SchoolBrand } from "@/components/SchoolBrand";
+import Link from 'next/link';
+import { AdminNav } from '@/components/AdminNav';
+import { MobileBottomNav } from '@/components/MobileBottomNav';
+import { malaysiaDate, requireAdmin } from '@/lib/admin';
+import { isDate } from '@/lib/validation';
 
-const jobs = [
-  ["07:50–08:20", "2 LINUX", "Bahasa Melayu", BookOpen],
-  ["08:30–09:00", "4 WINDOWS", "Sains", FlaskConical],
-  ["10:40–11:10", "6 FEDORA", "Sejarah", Building2],
-] as const;
-
-export default function TodayReliefPage() {
-  return <main className="todayPage container narrow"><header className="guestHeader"><SchoolBrand compact /></header><section className="pageIntro"><span className="eyebrow">JADUAL HARI INI</span><h1>Jadual Relief Saya</h1><p>Nama guru akan dipaparkan selepas backend disambungkan.</p></section><div className="notice warning"><Info size={20}/><span>Anda ditugaskan menggantikan kelas seperti berikut.</span></div><div className="todayJobs">{jobs.map(([time,cls,subj,Icon])=><article className="blockCard todayJob" key={time}><Icon size={26}/><div><span>{time}</span><strong>{cls} · {subj}</strong></div></article>)}</div><div className="notice info"><Info size={20}/><span>Ini ialah jadual relief rasmi. Sila hadir mengikut masa dan kelas yang ditetapkan.</span></div></main>
+export default async function TodayReliefPage({ searchParams }: { searchParams: Promise<{ date?: string }> }) {
+  const { supabase, profile } = await requireAdmin();
+  const query = await searchParams;
+  const date = query.date && isDate(query.date) ? query.date : malaysiaDate();
+  const { data: runs, error } = await supabase.from('relief_runs').select('id,mode,relief_date,published_at').eq('school_id', profile.school_id).eq('relief_date', date).eq('status', 'PUBLISHED').order('published_at', { ascending: false });
+  return <main className="adminLayout"><AdminNav active="Jadual Relief" /><section className="adminContent">
+    <header className="adminTop"><div><span className="eyebrow">JADUAL RASMI</span><h1>Jadual Relief</h1><p>Jadual yang telah diterbitkan sahaja.</p></div></header>
+    <form method="get" className="dateFilter"><label>Tarikh<input name="date" type="date" defaultValue={date} required /></label><button className="button secondary">Papar</button></form>
+    {error ? <div className="notice warning" role="alert">Jadual gagal dibaca. Sila cuba semula.</div> : (runs ?? []).length ? (runs ?? []).map(run => <section className="blockCard adminBlock" key={run.id}><h2>{run.relief_date} · {run.mode === 'BERKAMPUNG' ? 'Relief Berkampung' : 'Relief Biasa'}</h2><Link className="button teal" href={`/admin/relief/${run.id}`}>Lihat Jadual Diterbitkan</Link></section>) : <section className="blockCard adminBlock emptyState">Belum ada jadual relief diterbitkan untuk {date}.</section>}
+  </section><MobileBottomNav /></main>;
 }

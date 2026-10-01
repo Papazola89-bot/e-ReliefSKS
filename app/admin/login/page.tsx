@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import { ArrowLeft, LockKeyhole } from 'lucide-react';
 import { SchoolBrand } from '@/components/SchoolBrand';
+import { SubmitButton } from '@/components/SubmitButton';
 import { login } from './actions';
 
 export default async function AdminLoginPage({
@@ -19,9 +20,9 @@ export default async function AdminLoginPage({
         <p>Untuk pentadbir Relief SK Semangar.</p>
         {error ? <div className="notice warning">{error}</div> : null}
         <form action={login}>
-          <label>Email<input name="email" type="email" placeholder="admin@sekolah.my" required /></label>
-          <label>Kata Laluan<input name="password" type="password" placeholder="••••••••" required /></label>
-          <button type="submit" className="button primary full">Log Masuk</button>
+          <label>Email<input name="email" autoComplete="username" type="email" placeholder="admin@sekolah.my" required /></label>
+          <label>Kata Laluan<input name="password" autoComplete="current-password" type="password" placeholder="••••••••" required /></label>
+          <SubmitButton>Log Masuk</SubmitButton>
         </form>
         <Link href="/" className="textLink"><ArrowLeft size={16} /> Kembali</Link>
       </section>

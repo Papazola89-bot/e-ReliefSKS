@@ -1,0 +1,44 @@
+# Production readiness — 1 October 2026
+
+Target repository: Papazola89-bot/e-ReliefSKS. Target Supabase: lhjgdvpsvscghecwuwho. Target Vercel: e-relief-sks.
+
+## Implemented
+
+- Restored missing school logo and school photo using the supplied originals; the repository previously contained no public images.
+- Guest entry accepts a personal link or UUID token; removes the broken demo link.
+- Guest submission validates date, required reason and W1–W12 period range on the server. MC automatically uses LIVE. Pending controls prevent repeated clicks.
+- Success receipt displays the submitted date, reason, absence and resolved teacher rather than example content.
+- Keberadaan and published schedule read real school-scoped data with admin authorization; sample records removed.
+- Admin settings issues a guest token using the existing RPC for teachers without an active token.
+- Dashboard and generation support date selection. Analysis and preview use the same date.
+- Preview counts OPEN/UNFILLED jobs or Berkampung slots directly and disables publish while coverage is unresolved.
+- Active ADMIN role is checked after sign-in and in each protected page/action. Logout available on desktop and mobile.
+- Dependencies pinned; package-lock.json committed. No backend schema or algorithm changes.
+
+## Verification completed
+
+- Clean npm ci, next build and tsc --noEmit pass.
+- Local production-build browser checks at 390 px: home, Guest entry, admin login and invalid-token page render without horizontal overflow or page errors. Anonymous requests to dashboard, Keberadaan and published schedule redirect to admin login. Authenticated mobile screens and valid-token form still need live production verification.
+- Live Supabase tests ran in transactions and were rolled back. No test tokens, profiles, attendance or relief runs remain.
+- Anonymous DB role: valid token resolution, rejection of invalid token, planned submission, LIVE MC submission, rejection of blank reason, denial of admin preview RPC.
+- Authenticated DB role with temporary admin profile/JWT claims: admin profile read, guest-token issuance/read, dashboard snapshot and preview read pass RLS.
+- NORMAL: create_relief_preview → publish_relief_run; 4 assignments, 0 unresolved.
+- BERKAMPUNG: create_relief_preview → publish_relief_run; 42 assignments, 0 unresolved.
+- Guru Pemulihan absence produces NO_RELIEF_REQUIRED.
+
+These SQL tests verify deployed database contracts and privileges. They do not verify a real Supabase Auth password login, HTTP Data API requests using the publishable key, or production Server Actions.
+
+## Remaining production blockers
+
+1. Connected Vercel authorization cannot access e-relief-sks. get_project returns Project not found; deployment fetch cannot access its URL. No env write or production deployment performed.
+2. Supabase currently has zero auth.users and zero user_profiles. Create the first Auth user through Supabase Auth, confirm their email, and associate that user with an active ADMIN user_profiles row for SK Semangar. Never add a public admin-creation endpoint.
+3. Guest tokens initially number zero. After successful real admin login, use /admin/settings to issue personal links.
+4. Existing publishable-key/URL source fallback is deliberately retained until Vercel env is verified, per the requested order. Never add a service-role/secret key to frontend code.
+
+## Next production gate
+
+- Authorize Vercel access for the target project/team or permit browser fallback for the target Vercel dashboard.
+- Set NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY in Vercel Production and Preview. The verified active key must be the modern sb_publishable_ key from the target Supabase project.
+- Verify env presence and target URL, then remove the fallback URL/key and NEXT_PUBLIC_SUPABASE_ANON_KEY compatibility lookup from lib/supabase/config.ts; use the same env-only configuration in session proxy.
+- Rebuild and deploy, then test real login, token issuance/resolution, planned and LIVE submission, dashboard, both modes, preview and publish through the production UI. Use an explicitly designated test date and clean up test records.
+- Verify mobile Guest and authenticated Admin pages, with console/network errors checked. Report actual production alias and deployment READY status.

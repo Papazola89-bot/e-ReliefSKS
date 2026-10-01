@@ -1,6 +1,8 @@
 import Link from 'next/link';
 import { ArrowLeft, CalendarDays, Clock3, Info, Send } from 'lucide-react';
 import { SchoolBrand } from '@/components/SchoolBrand';
+import { isUuid } from '@/lib/validation';
+import { SubmitButton } from '@/components/SubmitButton';
 import { createClient } from '@/lib/supabase/server';
 import { submitGuestUnavailability } from './actions';
 
@@ -18,13 +20,15 @@ export default async function GuestPage({
   const { token } = await params;
   const { error: queryError } = await searchParams;
   const supabase = await createClient();
-  const { data: resolved, error } = await supabase.rpc('guest_resolve_token', { p_token: token });
+  const { data: resolved, error } = isUuid(token)
+    ? await supabase.rpc('guest_resolve_token', { p_token: token })
+    : { data: null, error: null };
   const profile = resolved as { valid?: boolean; display_name?: string; school_name?: string } | null;
 
   if (error || !profile?.valid) {
     return (
       <main className="guestPage container narrow">
-        <header className="guestHeader"><Link href="/"><ArrowLeft size={21} /></Link><SchoolBrand compact /></header>
+        <header className="guestHeader"><Link href="/"><ArrowLeft size={21} aria-label="Kembali" /></Link><SchoolBrand compact /></header>
         <section className="blockCard formCard">
           <h1>Link tidak sah</h1>
           <p>Link keberadaan ini tidak sah, tamat tempoh atau telah ditukar oleh admin.</p>
@@ -39,7 +43,7 @@ export default async function GuestPage({
 
   return (
     <main className="guestPage container narrow">
-      <header className="guestHeader"><Link href="/"><ArrowLeft size={21} /></Link><SchoolBrand compact /></header>
+      <header className="guestHeader"><Link href="/"><ArrowLeft size={21} aria-label="Kembali" /></Link><SchoolBrand compact /></header>
       <section className="pageIntro"><span className="eyebrow">GUEST MODE</span><h1>Keberadaan Guru</h1><p>Isi hanya jika tidak hadir atau bertugas di luar sekolah.</p></section>
       <div className="notice info"><Info size={20} /><span><strong>Jika hadir seperti biasa, tidak perlu isi borang ini.</strong><br />Sila isi hanya bagi urusan rasmi, kursus, CRK, MC, pertandingan atau tugasan luar.</span></div>
       <div className="notice warning"><Clock3 size={20} /><span>Keberadaan terancang disarankan dihantar sebelum <strong>6.30 petang</strong>. Kecemasan boleh dihantar bila-bila masa.</span></div>
@@ -54,8 +58,8 @@ export default async function GuestPage({
         <div className="formGrid two"><label>Nama Program<input name="program_name" placeholder="Contoh: TPPK MPT4" /></label><label>Anjuran<input name="organizer" placeholder="Contoh: PPD Kota Tinggi" /></label></div>
         <div className="formGrid two"><label>Peringkat<select name="event_level" defaultValue=""><option value="">Pilih peringkat</option><option>Sekolah</option><option>Daerah</option><option>Negeri</option><option>Kebangsaan</option></select></label><label>Tempat<input name="venue" placeholder="Contoh: PKG Bandar Mas" /></label></div>
         <div className="formGrid two"><label>Mula waktu<select name="start_period" defaultValue=""><option value="">Sehari</option>{Array.from({ length: 12 },(_,i)=><option key={i+1} value={i+1}>W{i+1}</option>)}</select></label><label>Akhir waktu<select name="end_period" defaultValue=""><option value="">Sehari</option>{Array.from({ length: 12 },(_,i)=><option key={i+1} value={i+1}>W{i+1}</option>)}</select></label></div>
-        <label className="checkRow"><input name="is_emergency" type="checkbox" /><span><strong>Kecemasan / LIVE</strong><small>Tandakan untuk MC atau perubahan mendadak yang perlu dibaca engine serta-merta.</small></span></label>
-        <button type="submit" className="button primary full"><Send size={18} /> Hantar Maklumat</button>
+        <label className="checkRow"><input name="is_emergency" type="checkbox" /><span><strong>Kecemasan / LIVE</strong><small>Tandakan untuk perubahan mendadak yang perlu dibaca sistem serta-merta. MC diproses sebagai LIVE secara automatik.</small></span></label>
+        <SubmitButton><Send size={18} /> Hantar Maklumat</SubmitButton>
       </form>
       <div className="guestFooter"><CalendarDays size={17} /><span>Rekod ini terus digunakan oleh sistem penjanaan relief selepas dihantar.</span></div>
     </main>
