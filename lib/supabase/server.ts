@@ -1,20 +1,11 @@
 import { createServerClient } from '@supabase/ssr';
 import { cookies } from 'next/headers';
-
-function publicKey() {
-  return process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY ?? process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-}
+import { supabasePublishableKey, supabaseUrl } from './config';
 
 export async function createClient() {
   const cookieStore = await cookies();
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const key = publicKey();
 
-  if (!url || !key) {
-    throw new Error('Supabase environment variables are missing.');
-  }
-
-  return createServerClient(url, key, {
+  return createServerClient(supabaseUrl, supabasePublishableKey, {
     cookies: {
       getAll() {
         return cookieStore.getAll();
