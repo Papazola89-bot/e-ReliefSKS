@@ -44,7 +44,7 @@ export default async function AdminDashboard({ searchParams }: { searchParams: P
   const awayRows = rows.filter((r) => r.availability_state !== 'AVAILABLE');
   const liveAbsent = rows.filter((r) => r.availability_state === 'LIVE_ABSENT').length;
   const plannedAway = rows.filter((r) => r.availability_state === 'PLANNED_AWAY').length;
-  const available = rows.length - liveAbsent - plannedAway;
+  const available = rows.filter(r => r.availability_state === 'AVAILABLE').length;
   const modeLabel = evalData.recommended_mode === 'BERKAMPUNG' ? 'BERKAMPUNG' : evalData.recommended_mode === 'NORMAL' ? 'BIASA' : 'TIADA';
 
   return (
@@ -55,18 +55,18 @@ export default async function AdminDashboard({ searchParams }: { searchParams: P
         <form method="get" className="dateFilter"><label>Tarikh<input name="date" type="date" defaultValue={today} required /></label><button className="button secondary">Papar</button></form>
         <div className="kpiGrid">
           <div className="kpi"><UsersRound /><span>Guru Hadir</span><strong>{available}</strong><small>Status semasa</small></div>
-          <div className="kpi"><CalendarDays /><span>Planned Away</span><strong>{plannedAway}</strong><small>Keberadaan terancang</small></div>
-          <div className="kpi"><UserRoundX /><span>Live Absent</span><strong>{liveAbsent}</strong><small>Tidak hadir hari ini</small></div>
+          <div className="kpi"><CalendarDays /><span>Terancang</span><strong>{plannedAway}</strong><small>Keberadaan terancang</small></div>
+          <div className="kpi"><UserRoundX /><span>Tidak Hadir LIVE</span><strong>{liveAbsent}</strong><small>Tidak hadir pada tarikh dipilih</small></div>
           <div className="kpi"><Sparkles /><span>Cadangan Mode</span><strong>{modeLabel}</strong><small>Berdasarkan kapasiti semasa</small></div>
         </div>
         <section className="blockCard adminBlock">
-          <div className="sectionHeading"><div><h2>Senarai Guru Tidak Hadir</h2><p>Planned dan LIVE untuk hari ini.</p></div><Link href={`/admin/keberadaan?date=${today}`}>Lihat semua</Link></div>
+          <div className="sectionHeading"><div><h2>Senarai Guru Tidak Hadir</h2><p>Terancang dan LIVE pada tarikh dipilih.</p></div><Link href={`/admin/keberadaan?date=${today}`}>Lihat semua</Link></div>
           <div className="tableLike">
-            {awayRows.length === 0 ? <div className="emptyState">Tiada ketidakhadiran direkodkan hari ini.</div> : awayRows.map((row,index)=><div className="tableRow" key={row.staff_id}><span>{index+1}</span><strong>{row.display_name}</strong><span className="statusPill">{row.availability_state === 'LIVE_ABSENT' ? 'LIVE' : 'PLANNED'}</span><span className="rowDetail">{row.live_absence ?? row.planned_absence ?? '-'}</span><span className="source">{row.relief_tier}</span></div>)}
+            {awayRows.length === 0 ? <div className="emptyState">Tiada ketidakhadiran direkodkan pada tarikh ini.</div> : awayRows.map((row,index)=><div className="tableRow" key={row.staff_id}><span>{index+1}</span><strong>{row.display_name}</strong><span className="statusPill">{row.availability_state === 'LIVE_ABSENT' ? 'LIVE' : 'PLANNED'}</span><span className="rowDetail">{row.live_absence ?? row.planned_absence ?? '-'}</span><span className="source">{row.relief_tier}</span></div>)}
           </div>
         </section>
         <div className="dashboardActions">
-          <section className="blockCard reliefNeed"><AlertTriangle /><span>Keperluan Relief Hari Ini</span><strong>{evalData.total_cover_demand ?? 0}</strong><small>waktu perlu diisi</small></section>
+          <section className="blockCard reliefNeed"><AlertTriangle /><span>Keperluan Relief</span><strong>{evalData.total_cover_demand ?? 0}</strong><small>waktu perlu diisi</small></section>
           <section className="blockCard modeCard"><CheckCircle2 /><span>Mode Dicadangkan</span><strong>{modeLabel === 'BERKAMPUNG' ? 'Relief Berkampung' : modeLabel === 'BIASA' ? 'Relief Biasa' : 'Tiada Relief'}</strong><small>{evalData.requires_relief ? 'Cadangan dijana oleh Relief Orchestrator.' : 'Tiada relief diperlukan.'}</small></section>
         </div>
         <Link href={`/admin/relief/new?date=${today}`} className="button primary fabLike"><Sparkles size={18} /> Jana Relief</Link>

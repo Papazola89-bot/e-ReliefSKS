@@ -23,14 +23,15 @@ export default async function NewReliefPage({
 
   const evalData = (evaluation ?? {}) as {
     p1_total?: number;
+    reason?: string;
+    periods?: Array<{ p1_present: number }>;
     minimum_p1_presence_pct?: number;
     max_normal_capacity_shortfall?: number;
     recommended_mode?: 'NORMAL' | 'BERKAMPUNG' | null;
   };
 
-  const present = evalData.p1_total && evalData.minimum_p1_presence_pct != null
-    ? Math.round(evalData.p1_total * evalData.minimum_p1_presence_pct)
-    : 0;
+  const present = evalData.periods?.length ? Math.min(...evalData.periods.map(p => p.p1_present)) : null;
+  const nonSchoolDay = evalData.reason === 'NON_SCHOOL_WEEKDAY';
 
   return (
     <main className="adminLayout">
@@ -42,15 +43,16 @@ export default async function NewReliefPage({
         {message ? <div className="notice info">{message}</div> : null}
         <form method="get" className="dateFilter"><label>Tarikh Relief<input name="date" type="date" defaultValue={today} required /></label><button className="button secondary">Analisis Tarikh</button></form>
         {evaluationError ? <div className="notice warning" role="alert">Analisis tidak dapat dibaca. Sila cuba semula.</div> : null}
+        {nonSchoolDay ? <div className="notice info">Tarikh ini bukan hari persekolahan Isnin hingga Jumaat. Pilih tarikh lain.</div> : null}
         <form action={createReliefPreview} className="blockCard settingsCard">
           <input name="date" type="hidden" value={today} /><p>Analisis untuk <strong>{today}</strong></p>
           <label>Mode<select name="mode" defaultValue="AUTO"><option value="AUTO">AUTO</option><option value="NORMAL">RELIEF BIASA</option><option value="BERKAMPUNG">RELIEF BERKAMPUNG</option></select></label>
           <div className="analysisPreview">
-            <div><UsersRound /><span>P1 Hadir</span><strong>{present} / {evalData.p1_total ?? 0}</strong></div>
-            <div><CheckCircle2 /><span>Normal Capacity</span><strong>{(evalData.max_normal_capacity_shortfall ?? 0) > 0 ? `Kurang ${evalData.max_normal_capacity_shortfall}` : 'Mencukupi'}</strong></div>
+            <div><UsersRound /><span>P1 Hadir (minimum)</span><strong>{present ?? "–"} / {evalData.p1_total ?? 0}</strong></div>
+            <div><CheckCircle2 /><span>Normal Capacity</span><strong>{nonSchoolDay ? 'Tiada analisis' : (evalData.max_normal_capacity_shortfall ?? 0) > 0 ? `Kurang ${evalData.max_normal_capacity_shortfall}` : 'Mencukupi'}</strong></div>
             <div><Sparkles /><span>Cadangan</span><strong>{evalData.recommended_mode === 'BERKAMPUNG' ? 'Relief Berkampung' : evalData.recommended_mode === 'NORMAL' ? 'Relief Biasa' : 'Tiada Relief'}</strong></div>
           </div>
-          <SubmitButton disabled={Boolean(evaluationError)}><Sparkles size={18} /> Jana Cadangan</SubmitButton>
+          <SubmitButton disabled={Boolean(evaluationError) || nonSchoolDay}><Sparkles size={18} /> Jana Cadangan</SubmitButton>
         </form>
       </section>
       <MobileBottomNav />

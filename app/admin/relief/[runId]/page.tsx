@@ -31,16 +31,14 @@ export default async function ReliefPreviewPage({
     return <main className="adminLayout"><AdminNav active="Jana Relief" /><section className="adminContent"><div className="notice warning">Run relief tidak dijumpai.</div></section><MobileBottomNav /></main>;
   }
 
-  const { data: assignments, error: assignmentsError } = await supabase
-    .from('relief_assignments')
-    .select('id, substitute_staff_id, class_id, rotation_block_no, mode, start_period, end_period, load_units, status')
-    .eq('run_id', runId)
-    .neq('status', 'CANCELLED')
-    .order('start_period');
-
-  const { data: unresolvedRows, error: unresolvedError } = run.mode === 'BERKAMPUNG'
-    ? await supabase.from('berkampung_slots').select('id,class_id,start_period,end_period,reason').eq('run_id', runId).in('status', ['OPEN', 'UNFILLED'])
-    : await supabase.from('relief_jobs').select('id,class_id,period_no,reason').eq('run_id', runId).eq('requires_cover', true).in('status', ['OPEN', 'UNFILLED']);
+  const [{ data: assignments, error: assignmentsError }, { data: unresolvedRows, error: unresolvedError }] = await Promise.all([
+    supabase.from('relief_assignments')
+      .select('id, substitute_staff_id, class_id, rotation_block_no, mode, start_period, end_period, load_units, status')
+      .eq('run_id', runId).neq('status', 'CANCELLED').order('start_period'),
+    run.mode === 'BERKAMPUNG'
+      ? supabase.from('berkampung_slots').select('id,class_id,start_period,end_period,reason').eq('run_id', runId).in('status', ['OPEN', 'UNFILLED'])
+      : supabase.from('relief_jobs').select('id,class_id,period_no,reason').eq('run_id', runId).eq('requires_cover', true).in('status', ['OPEN', 'UNFILLED']),
+  ]);
   const assignmentRows = assignments ?? [];
   const assignmentIds = assignmentRows.map((a) => a.id);
 
@@ -112,7 +110,7 @@ export default async function ReliefPreviewPage({
           {!cards.length && !readError ? <div className="emptyState">Tiada tugasan relief dijana.</div> : null}
           {cards.map((item,index)=><article className="reliefCard blockCard" key={item.id}><div className="reliefNo">{index+1}</div><div className="reliefMain"><span className="reliefTime">W{item.start_period}{item.end_period !== item.start_period ? `–W${item.end_period}` : ''}</span><h3>{item.className} · {item.activity}</h3><div className="pair">{run.mode === 'NORMAL' ? <span>Guru Tidak Hadir<strong>{item.absent}</strong></span> : <span>Rotasi<strong>Blok {item.rotation_block_no}</strong></span>}<span>Guru Relief<strong>{item.relief}</strong></span></div></div>{item.rotation_block_no ? <span className="rankBadge">Blok {item.rotation_block_no}</span> : <span className="rankBadge">Auto</span>}</article>)}
         </section>
-        <div className="publishBar"><Link href="/admin/relief/new" className="button secondary"><ChevronLeft size={17} /> Kembali</Link>{run.status === 'DRAFT' ? <form action={publishAction}><SubmitButton className="button teal" disabled={readError || unresolved > 0}><Send size={17} /> Terbitkan</SubmitButton></form> : <span className="button secondary"><CheckCircle2 size={17} /> {run.status}</span>}</div>
+        <div className="publishBar"><Link href={`/admin/relief/new?date=${run.relief_date}`} className="button secondary"><ChevronLeft size={17} /> Kembali</Link>{run.status === 'DRAFT' ? <form action={publishAction}><SubmitButton className="button teal" disabled={readError || unresolved > 0}><Send size={17} /> Terbitkan</SubmitButton></form> : <span className="button secondary"><CheckCircle2 size={17} /> {run.status}</span>}</div>
       </section>
       <MobileBottomNav />
     </main>

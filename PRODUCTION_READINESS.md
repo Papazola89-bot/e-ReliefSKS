@@ -63,3 +63,14 @@ These SQL tests verify deployed database contracts and privileges. They do not v
 - Guest can add/remove up to 31 distinct dates with one shared reason and absence type. No date is silently preselected. All dates validated before writing; duplicate dates normalized on the server.
 - Existing guest_submit_by_staff RPC called separately per date, without schema/engine changes. A batch is not atomic: receipt lists successful dates and explicitly identifies failed dates for resubmission.
 - Two-date anonymous PLANNED contract verified for 6 and 7 October in a rolled-back transaction. Build passed.
+
+## Debug and UX audit — 2 October 2026
+
+- Production logs showed one failed teacher-directory background cache refresh at 11:02 MYT. Matching Supabase log query returned no errors; underlying cause is not confirmed. Read-only refresh now has bounded timeouts, one retry for transport failures, and code-only logging (no teacher reasons or credentials).
+- Guest form now retains all valid selected dates and field values on validation/backend failures using useActionState. Partial batches retain only failed dates for retry, identify overlap/Admin locks and catch network exceptions. Writes are not automatically retried; batch deadline 90 seconds and page maxDuration 120 seconds.
+- Server validates absence types, 31-date limit, 1000-character reason and pending dates not yet added. General error screen provides retry.
+- Dashboard labels refer to selected date, available count uses AVAILABLE explicitly, and generator P1 minimum reads exact per-period counts. Non-school weekdays show explanation and disable generation. Preview reads independent assignment/unresolved queries concurrently and preserves date on Back. No schema, RLS or Relief Engine edits.
+- Build/typecheck passed; helper tests cover partial rejection/network exception and full LIVE success; mobile browser test confirms two dates and reason retained after invalid range, duplicate rejection, removal, no overflow/no page errors at 390px. Tests do not persist attendance.
+- Production authenticated Admin UI remains gated by manual login in this browser; anonymous /admin correctly redirects to login. Auth Site URL localhost correction remains pending management access.
+
+- npm audit --omit=dev reports zero vulnerabilities. Guest writes now use a stateless publishable client rather than refreshing an optional Admin session.
