@@ -16,7 +16,7 @@ export default function HomePage() {
           <div className="heroActions">
             <Link href="/guest" className="actionCard primary">
               <UsersRound size={30} />
-              <span><strong>Saya Guru</strong><small>Guest Mode · tanpa login</small></span>
+              <span><strong>Keberadaan</strong><small>Isi terus · tanpa login</small></span>
               <ArrowRight size={22} />
             </Link>
             <Link href="/admin/login" className="actionCard secondary">

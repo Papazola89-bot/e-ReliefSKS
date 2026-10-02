@@ -49,3 +49,11 @@ These SQL tests verify deployed database contracts and privileges. They do not v
 - After Admin accounts are supplied, test real login, token issuance/resolution, planned and LIVE submission, dashboard, both modes, preview and publish through the production UI. Use an explicitly designated test date and clean up test records.
 - Verify mobile Guest and authenticated Admin pages, with console/network errors checked. Report actual production alias and deployment READY status.
 - Signup UI and server validation are checked locally at 390px. Live Auth settings show email signup enabled and email confirmation required. Actual confirmation-email delivery and return URL still need testing with the user's own email; no test registration or email was sent.
+
+## Direct Guest update — 2 October 2026
+
+- User requested open name-selected Keberadaan. /guest now loads 17 active teachers and submits without login or personal links; reason remains mandatory.
+- Reviewed additive guest_staff_directory and guest_submit_by_staff RPCs applied only to e-Prod. Existing tables, RLS and Relief Engine definitions unchanged. Adapter uses internal existing Guest submission contract; token never reaches the public form.
+- Anonymous transaction/rollback checks pass for directory, PLANNED insert/update (same entry ID), MC LIVE, blank-reason rejection and invalid-teacher rejection. No test attendance persisted.
+- Public pages skip Auth middleware; teacher directory cached 5 minutes; loading feedback added; Vercel functions configured sin1 near the Singapore database. Actual user-perceived speed has not yet been measured.
+- User email confirmed and active school ADMIN profile provisioned. Authenticated production UI end-to-end verification remains pending manual login. Supabase Auth Site URL localhost issue remains pending management access.
