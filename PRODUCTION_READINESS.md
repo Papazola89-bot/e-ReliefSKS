@@ -28,7 +28,15 @@ Target repository: Papazola89-bot/e-ReliefSKS. Target Supabase: lhjgdvpsvscghecw
 
 These SQL tests verify deployed database contracts and privileges. They do not verify a real Supabase Auth password login, HTTP Data API requests using the publishable key, or production Server Actions.
 
-## Remaining production blockers
+## Production deployment
+
+- Production URL: https://e-relief-sks.vercel.app/
+- Deployment 4SnHJWf6cFBEqBip3KmYZ9F5uUeh is Ready on main commit 6e1737624e301a09f1267e1bcf02a75be56e9235 (22s build).
+- Live public UI: home, Guest entry and Admin login render at 500px without horizontal overflow; school images load. Desktop home also passes at 1363px.
+- Guest entry Server Action accepts a UUID and routes to the token page; a nonexistent token returns Link tidak sah through the production Supabase connection.
+- Anonymous /admin and /admin/keberadaan requests redirect to /admin/login.
+
+## Configuration and remaining account gate
 
 1. Vercel browser login verified on 2 October. NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY saved and verified for all environments on e-relief-sks. Git is connected; production tracks main. Source URL/key and legacy anon-key fallbacks removed; next build and typecheck pass after removal.
 2. Supabase currently has zero auth.users and zero user_profiles. Create the first Auth user through Supabase Auth, confirm their email, and associate that user with an active ADMIN user_profiles row for SK Semangar. Never add a public admin-creation endpoint.
@@ -37,5 +45,5 @@ These SQL tests verify deployed database contracts and privileges. They do not v
 
 ## Next production gate
 
-- Rebuild and deploy, then test real login, token issuance/resolution, planned and LIVE submission, dashboard, both modes, preview and publish through the production UI. Use an explicitly designated test date and clean up test records.
+- After Admin accounts are supplied, test real login, token issuance/resolution, planned and LIVE submission, dashboard, both modes, preview and publish through the production UI. Use an explicitly designated test date and clean up test records.
 - Verify mobile Guest and authenticated Admin pages, with console/network errors checked. Report actual production alias and deployment READY status.
