@@ -15,6 +15,9 @@ export async function login(formData: FormData) {
   const { data, error } = await supabase.auth.signInWithPassword({ email, password });
 
   if (error) {
+    if (error.code === 'email_not_confirmed') {
+      redirect(`/admin/login?error=${encodeURIComponent('Sahkan email melalui pautan pengesahan sebelum log masuk.')}`);
+    }
     redirect(`/admin/login?error=${encodeURIComponent('Email atau kata laluan tidak sah')}`);
   }
 
@@ -22,7 +25,7 @@ export async function login(formData: FormData) {
     .select('app_role,active').eq('auth_user_id', data.user!.id).single();
   if (!profile?.active || profile.app_role !== 'ADMIN') {
     await supabase.auth.signOut();
-    redirect('/admin/login?error=Akaun%20ini%20bukan%20pentadbir%20aktif');
+    redirect(`/admin/login?error=${encodeURIComponent('Akses Admin belum aktif. Hubungi pentadbir sekolah untuk pengaktifan akaun.')}`);
   }
   redirect('/admin');
 }

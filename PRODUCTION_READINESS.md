@@ -14,6 +14,7 @@ Target repository: Papazola89-bot/e-ReliefSKS. Target Supabase: lhjgdvpsvscghecw
 - Preview counts OPEN/UNFILLED jobs or Berkampung slots directly and disables publish while coverage is unresolved.
 - Active ADMIN role is checked after sign-in and in each protected page/action. Logout available on desktop and mobile.
 - Dependencies pinned; package-lock.json committed. No backend schema or algorithm changes.
+- Login now links to /admin/signup. Signup validates email, password length and password confirmation, calls Supabase Auth with the publishable client, and never creates an ADMIN profile. Unconfirmed email and inactive Admin access have separate login messages.
 
 ## Verification completed
 
@@ -39,7 +40,7 @@ These SQL tests verify deployed database contracts and privileges. They do not v
 ## Configuration and remaining account gate
 
 1. Vercel browser login verified on 2 October. NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY saved and verified for all environments on e-relief-sks. Git is connected; production tracks main. Source URL/key and legacy anon-key fallbacks removed; next build and typecheck pass after removal.
-2. Supabase currently has zero auth.users and zero user_profiles. Create the first Auth user through Supabase Auth, confirm their email, and associate that user with an active ADMIN user_profiles row for SK Semangar. Never add a public admin-creation endpoint.
+2. Supabase initially has zero auth.users and zero user_profiles. Users may now create an Auth account via /admin/signup, confirm their email, then have an authorized administrator associate their Auth user with an active ADMIN user_profiles row for SK Semangar. Never add a public admin-role creation endpoint.
 3. Guest tokens initially number zero. After successful real admin login, use /admin/settings to issue personal links.
 4. User chose to provide Admin accounts later. Multiple Admins are supported through individual Auth users with active school-scoped ADMIN profiles. Production login and authenticated end-to-end browser tests remain pending until accounts are provided. Never add a service-role/secret key to frontend code.
 
@@ -47,3 +48,4 @@ These SQL tests verify deployed database contracts and privileges. They do not v
 
 - After Admin accounts are supplied, test real login, token issuance/resolution, planned and LIVE submission, dashboard, both modes, preview and publish through the production UI. Use an explicitly designated test date and clean up test records.
 - Verify mobile Guest and authenticated Admin pages, with console/network errors checked. Report actual production alias and deployment READY status.
+- Signup UI and server validation are checked locally at 390px. Live Auth settings show email signup enabled and email confirmation required. Actual confirmation-email delivery and return URL still need testing with the user's own email; no test registration or email was sent.
