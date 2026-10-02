@@ -1,4 +1,4 @@
-# Production readiness — 1 October 2026
+# Production readiness — 2 October 2026
 
 Target repository: Papazola89-bot/e-ReliefSKS. Target Supabase: lhjgdvpsvscghecwuwho. Target Vercel: e-relief-sks.
 
@@ -30,15 +30,12 @@ These SQL tests verify deployed database contracts and privileges. They do not v
 
 ## Remaining production blockers
 
-1. Connected Vercel authorization cannot access e-relief-sks. get_project returns Project not found; deployment fetch cannot access its URL. No env write or production deployment performed.
+1. Vercel browser login verified on 2 October. NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY saved and verified for all environments on e-relief-sks. Git is connected; production tracks main. Source URL/key and legacy anon-key fallbacks removed; next build and typecheck pass after removal.
 2. Supabase currently has zero auth.users and zero user_profiles. Create the first Auth user through Supabase Auth, confirm their email, and associate that user with an active ADMIN user_profiles row for SK Semangar. Never add a public admin-creation endpoint.
 3. Guest tokens initially number zero. After successful real admin login, use /admin/settings to issue personal links.
-4. Existing publishable-key/URL source fallback is deliberately retained until Vercel env is verified, per the requested order. Never add a service-role/secret key to frontend code.
+4. User chose to provide Admin accounts later. Multiple Admins are supported through individual Auth users with active school-scoped ADMIN profiles. Production login and authenticated end-to-end browser tests remain pending until accounts are provided. Never add a service-role/secret key to frontend code.
 
 ## Next production gate
 
-- Authorize Vercel access for the target project/team or permit browser fallback for the target Vercel dashboard.
-- Set NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY in Vercel Production and Preview. The verified active key must be the modern sb_publishable_ key from the target Supabase project.
-- Verify env presence and target URL, then remove the fallback URL/key and NEXT_PUBLIC_SUPABASE_ANON_KEY compatibility lookup from lib/supabase/config.ts; use the same env-only configuration in session proxy.
 - Rebuild and deploy, then test real login, token issuance/resolution, planned and LIVE submission, dashboard, both modes, preview and publish through the production UI. Use an explicitly designated test date and clean up test records.
 - Verify mobile Guest and authenticated Admin pages, with console/network errors checked. Report actual production alias and deployment READY status.
