@@ -12,12 +12,18 @@ export async function login(formData: FormData) {
   }
 
   const supabase = await createClient();
-  const { error } = await supabase.auth.signInWithPassword({ email, password });
+  const { data, error } = await supabase.auth.signInWithPassword({ email, password });
 
   if (error) {
     redirect(`/admin/login?error=${encodeURIComponent('Email atau kata laluan tidak sah')}`);
   }
 
+  const { data: profile } = await supabase.from('user_profiles')
+    .select('app_role,active').eq('auth_user_id', data.user!.id).single();
+  if (!profile?.active || profile.app_role !== 'ADMIN') {
+    await supabase.auth.signOut();
+    redirect('/admin/login?error=Akaun%20ini%20bukan%20pentadbir%20aktif');
+  }
   redirect('/admin');
 }
 

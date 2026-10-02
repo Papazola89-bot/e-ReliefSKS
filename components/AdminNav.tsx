@@ -1,3 +1,4 @@
+import { logout } from '@/app/admin/login/actions';
 import Link from "next/link";
 import { CalendarDays, ClipboardList, LayoutDashboard, Settings, UsersRound } from "lucide-react";
 import { SchoolBrand } from "./SchoolBrand";
@@ -7,7 +8,7 @@ const items = [
   ["Keberadaan", "/admin/keberadaan", UsersRound],
   ["Jana Relief", "/admin/relief/new", ClipboardList],
   ["Jadual Relief", "/relief/today", CalendarDays],
-  ["Tetapan", "#", Settings],
+  ["Tetapan", "/admin/settings", Settings],
 ] as const;
 
 export function AdminNav({ active }: { active?: string }) {
@@ -22,6 +23,7 @@ export function AdminNav({ active }: { active?: string }) {
           </Link>
         ))}
       </nav>
+      <form action={logout}><button className="button secondary full">Log Keluar</button></form>
       <div className="sidebarNote">
         <strong>SK Semangar</strong>
         <span>Relief lebih teratur, guru lebih terjaga.</span>

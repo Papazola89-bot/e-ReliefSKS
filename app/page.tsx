@@ -14,7 +14,7 @@ export default function HomePage() {
           <p>Keberadaan Guru · Penjanaan Relief · Lebih Teratur · Lebih Mudah</p>
           <div className="location"><MapPin size={17} /> Kota Tinggi, Johor</div>
           <div className="heroActions">
-            <Link href="/guest/demo" className="actionCard primary">
+            <Link href="/guest" className="actionCard primary">
               <UsersRound size={30} />
               <span><strong>Saya Guru</strong><small>Guest Mode · tanpa login</small></span>
               <ArrowRight size={22} />

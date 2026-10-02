@@ -1,6 +1,7 @@
 'use server';
 
 import { redirect } from 'next/navigation';
+import { isDate } from '@/lib/validation';
 import { requireAdmin } from '@/lib/admin';
 
 export async function createReliefPreview(formData: FormData) {
@@ -8,7 +9,7 @@ export async function createReliefPreview(formData: FormData) {
   const date = String(formData.get('date') ?? '');
   const mode = String(formData.get('mode') ?? 'AUTO');
 
-  if (!date) redirect('/admin/relief/new?error=Tarikh%20diperlukan');
+  if (!isDate(date) || !['AUTO', 'NORMAL', 'BERKAMPUNG'].includes(mode)) redirect('/admin/relief/new?error=Tarikh%20atau%20mode%20tidak%20sah');
 
   const forceMode = mode === 'AUTO' ? null : mode;
   const { data, error } = await supabase.rpc('create_relief_preview', {
@@ -19,13 +20,13 @@ export async function createReliefPreview(formData: FormData) {
   });
 
   if (error) {
-    redirect(`/admin/relief/new?error=${encodeURIComponent(error.message)}`);
+    redirect(`/admin/relief/new?date=${date}&error=${encodeURIComponent(error.message)}`);
   }
 
   const result = data as { run_id?: string | null; status?: string } | null;
 
   if (!result?.run_id) {
-    redirect('/admin/relief/new?message=Tiada%20relief%20diperlukan');
+    redirect(`/admin/relief/new?date=${date}&message=Tiada%20relief%20diperlukan`);
   }
 
   redirect(`/admin/relief/${result.run_id}`);

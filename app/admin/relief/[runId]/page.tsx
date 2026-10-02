@@ -3,6 +3,9 @@ import { CheckCircle2, ChevronLeft, Send } from 'lucide-react';
 import { AdminNav } from '@/components/AdminNav';
 import { MobileBottomNav } from '@/components/MobileBottomNav';
 import { requireAdmin } from '@/lib/admin';
+import { isUuid } from '@/lib/validation';
+import { notFound } from 'next/navigation';
+import { SubmitButton } from '@/components/SubmitButton';
 import { publishRun } from './actions';
 
 export default async function ReliefPreviewPage({
@@ -13,37 +16,42 @@ export default async function ReliefPreviewPage({
   searchParams: Promise<{ error?: string; published?: string }>;
 }) {
   const { runId } = await params;
+  if (!isUuid(runId)) notFound();
   const { error, published } = await searchParams;
-  const { supabase } = await requireAdmin();
+  const { supabase, profile } = await requireAdmin();
 
   const { data: run, error: runError } = await supabase
     .from('relief_runs')
     .select('id, mode, status, relief_date, trigger_snapshot')
     .eq('id', runId)
+    .eq('school_id', profile.school_id)
     .single();
 
   if (runError || !run) {
     return <main className="adminLayout"><AdminNav active="Jana Relief" /><section className="adminContent"><div className="notice warning">Run relief tidak dijumpai.</div></section><MobileBottomNav /></main>;
   }
 
-  const { data: assignments } = await supabase
+  const { data: assignments, error: assignmentsError } = await supabase
     .from('relief_assignments')
     .select('id, substitute_staff_id, class_id, rotation_block_no, mode, start_period, end_period, load_units, status')
     .eq('run_id', runId)
     .neq('status', 'CANCELLED')
     .order('start_period');
 
+  const { data: unresolvedRows, error: unresolvedError } = run.mode === 'BERKAMPUNG'
+    ? await supabase.from('berkampung_slots').select('id,class_id,start_period,end_period,reason').eq('run_id', runId).in('status', ['OPEN', 'UNFILLED'])
+    : await supabase.from('relief_jobs').select('id,class_id,period_no,reason').eq('run_id', runId).eq('requires_cover', true).in('status', ['OPEN', 'UNFILLED']);
   const assignmentRows = assignments ?? [];
   const assignmentIds = assignmentRows.map((a) => a.id);
 
-  const { data: links } = assignmentIds.length
+  const { data: links, error: linksError } = assignmentIds.length
     ? await supabase.from('relief_assignment_jobs').select('assignment_id, relief_job_id').in('assignment_id', assignmentIds)
-    : { data: [] as Array<{ assignment_id: string; relief_job_id: string }> };
+    : { error: null, data: [] as Array<{ assignment_id: string; relief_job_id: string }> };
 
   const jobIds = (links ?? []).map((l) => l.relief_job_id);
-  const { data: jobs } = jobIds.length
+  const { data: jobs, error: jobsError } = jobIds.length
     ? await supabase.from('relief_jobs').select('id, absent_staff_id, class_id, period_no, activity_code').in('id', jobIds)
-    : { data: [] as Array<{ id: string; absent_staff_id: string; class_id: string | null; period_no: number; activity_code: string | null }> };
+    : { error: null, data: [] as Array<{ id: string; absent_staff_id: string; class_id: string | null; period_no: number; activity_code: string | null }> };
 
   const staffIds = Array.from(new Set([
     ...assignmentRows.map((a) => a.substitute_staff_id),
@@ -52,11 +60,12 @@ export default async function ReliefPreviewPage({
   const classIds = Array.from(new Set([
     ...assignmentRows.map((a) => a.class_id),
     ...(jobs ?? []).map((j) => j.class_id),
+    ...(unresolvedRows ?? []).map((j) => j.class_id),
   ].filter(Boolean)));
 
-  const [{ data: staff }, { data: classes }] = await Promise.all([
-    staffIds.length ? supabase.from('staff').select('id, display_name').in('id', staffIds) : Promise.resolve({ data: [] }),
-    classIds.length ? supabase.from('classes').select('id, class_name').in('id', classIds) : Promise.resolve({ data: [] }),
+  const [{ data: staff, error: staffError }, { data: classes, error: classesError }] = await Promise.all([
+    staffIds.length ? supabase.from('staff').select('id, display_name').in('id', staffIds) : Promise.resolve({ data: [], error: null }),
+    classIds.length ? supabase.from('classes').select('id, class_name').in('id', classIds) : Promise.resolve({ data: [], error: null }),
   ]);
 
   const staffMap = new Map((staff ?? []).map((s) => [s.id, s.display_name]));
@@ -83,7 +92,8 @@ export default async function ReliefPreviewPage({
   });
 
   const totalLoad = cards.reduce((sum, card) => sum + Number(card.load_units ?? 0), 0);
-  const unresolved = Number((run.trigger_snapshot as Record<string, unknown> | null)?.unfilled_slots ?? (run.trigger_snapshot as Record<string, unknown> | null)?.unfilled_jobs ?? 0);
+  const unresolved = unresolvedRows?.length ?? 0;
+  const readError = Boolean(assignmentsError || unresolvedError || linksError || jobsError || staffError || classesError);
   const uniqueTeachers = new Set(cards.map((c) => c.substitute_staff_id)).size;
   const publishAction = publishRun.bind(null, runId);
 
@@ -96,9 +106,13 @@ export default async function ReliefPreviewPage({
         {published ? <div className="notice info">Jadual relief telah diterbitkan.</div> : null}
         <div className="summaryCards"><div><strong>{cards.length}</strong><span>assignment</span></div><div><strong>{unresolved}</strong><span>unresolved</span></div><div><strong>{uniqueTeachers}</strong><span>guru terlibat</span></div><div><strong>{totalLoad.toFixed(1)}</strong><span>load unit</span></div></div>
         <section className="previewList">
-          {cards.map((item,index)=><article className="reliefCard blockCard" key={item.id}><div className="reliefNo">{index+1}</div><div className="reliefMain"><span className="reliefTime">W{item.start_period}{item.end_period !== item.start_period ? `–W${item.end_period}` : ''}</span><h3>{item.className} · {item.activity}</h3><div className="pair"><span>Guru Tidak Hadir<strong>{item.absent}</strong></span><span>Guru Relief<strong>{item.relief}</strong></span></div></div>{item.rotation_block_no ? <span className="rankBadge">Blok {item.rotation_block_no}</span> : <span className="rankBadge">Auto</span>}</article>)}
+          {readError ? <div className="notice warning" role="alert">Preview gagal dibaca. Terbitkan hanya selepas data lengkap.</div> : null}
+          {unresolved > 0 ? <div className="notice warning">{unresolved} slot belum diisi. Jadual ini belum boleh diterbitkan.</div> : null}
+          {(unresolvedRows ?? []).map(row => <div className="notice warning" key={row.id}>{classMap.get(row.class_id ?? '') ?? 'Kelas'} · {row.reason ?? 'Belum ada guru relief'}</div>)}
+          {!cards.length && !readError ? <div className="emptyState">Tiada tugasan relief dijana.</div> : null}
+          {cards.map((item,index)=><article className="reliefCard blockCard" key={item.id}><div className="reliefNo">{index+1}</div><div className="reliefMain"><span className="reliefTime">W{item.start_period}{item.end_period !== item.start_period ? `–W${item.end_period}` : ''}</span><h3>{item.className} · {item.activity}</h3><div className="pair">{run.mode === 'NORMAL' ? <span>Guru Tidak Hadir<strong>{item.absent}</strong></span> : <span>Rotasi<strong>Blok {item.rotation_block_no}</strong></span>}<span>Guru Relief<strong>{item.relief}</strong></span></div></div>{item.rotation_block_no ? <span className="rankBadge">Blok {item.rotation_block_no}</span> : <span className="rankBadge">Auto</span>}</article>)}
         </section>
-        <div className="publishBar"><Link href="/admin/relief/new" className="button secondary"><ChevronLeft size={17} /> Kembali</Link>{run.status === 'DRAFT' ? <form action={publishAction}><button type="submit" className="button teal"><Send size={17} /> Terbitkan</button></form> : <span className="button secondary"><CheckCircle2 size={17} /> {run.status}</span>}</div>
+        <div className="publishBar"><Link href="/admin/relief/new" className="button secondary"><ChevronLeft size={17} /> Kembali</Link>{run.status === 'DRAFT' ? <form action={publishAction}><SubmitButton className="button teal" disabled={readError || unresolved > 0}><Send size={17} /> Terbitkan</SubmitButton></form> : <span className="button secondary"><CheckCircle2 size={17} /> {run.status}</span>}</div>
       </section>
       <MobileBottomNav />
     </main>
