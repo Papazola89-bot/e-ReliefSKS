@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import { ArrowLeft, CalendarDays, Clock3, Info, Send } from 'lucide-react';
 import { SchoolBrand } from '@/components/SchoolBrand';
+import { GuestDates } from '@/components/GuestDates';
 import { SubmitButton } from '@/components/SubmitButton';
 import { getGuestDirectory } from '@/lib/guest-directory';
 import { submitKeberadaan } from './actions';
@@ -22,8 +23,8 @@ export default async function GuestPage({ searchParams }: {
       {error ? <div className="notice warning">{error}</div> : null}
       <form action={submitKeberadaan} className="formCard blockCard">
         <label>Nama Guru<select name="staff_id" required defaultValue={selectedStaff ?? ""}><option value="" disabled>Pilih nama anda</option>{staff.map(s => <option key={s.id} value={s.id}>{s.display_name}</option>)}</select></label>
+        <GuestDates today={today} />
         <div className="formGrid two">
-          <label>Tarikh<input name="date" type="date" defaultValue={today} required /></label>
           <label>Jenis Ketidakhadiran<select name="absence_code" defaultValue="" required><option value="" disabled>Pilih jenis</option><option value="URUSAN_RASMI">Urusan Rasmi</option><option value="KURSUS">Kursus</option><option value="MESYUARAT">Mesyuarat</option><option value="CRK">CRK</option><option value="CRT">CRT</option><option value="MC">MC</option><option value="KELUAR_SEKOLAH">Keluar Sekolah</option><option value="LAIN_LAIN">Lain-lain</option></select></label>
         </div>
         <label>Sebab / Program *<textarea name="reason" rows={3} placeholder="Contoh: TPPK MPT4, pertandingan bola sepak, kursus..." required /></label>

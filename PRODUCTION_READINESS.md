@@ -57,3 +57,9 @@ These SQL tests verify deployed database contracts and privileges. They do not v
 - Anonymous transaction/rollback checks pass for directory, PLANNED insert/update (same entry ID), MC LIVE, blank-reason rejection and invalid-teacher rejection. No test attendance persisted.
 - Public pages skip Auth middleware; teacher directory cached 5 minutes; loading feedback added; Vercel functions configured sin1 near the Singapore database. Actual user-perceived speed has not yet been measured.
 - User email confirmed and active school ADMIN profile provisioned. Authenticated production UI end-to-end verification remains pending manual login. Supabase Auth Site URL localhost issue remains pending management access.
+
+## Multiple absence dates — 2 October 2026
+
+- Guest can add/remove up to 31 distinct dates with one shared reason and absence type. No date is silently preselected. All dates validated before writing; duplicate dates normalized on the server.
+- Existing guest_submit_by_staff RPC called separately per date, without schema/engine changes. A batch is not atomic: receipt lists successful dates and explicitly identifies failed dates for resubmission.
+- Two-date anonymous PLANNED contract verified for 6 and 7 October in a rolled-back transaction. Build passed.
