@@ -1,17 +1,47 @@
 'use server';
+
 import { redirect } from 'next/navigation';
 import { revalidatePath } from 'next/cache';
 import { requireAdmin } from '@/lib/admin';
 import { isUuid } from '@/lib/validation';
 
-export async function issueGuestToken(formData: FormData) {
+function settingsUrl(message: string, kind: 'error' | 'activated' = 'error') {
+  return `/admin/settings?${kind}=${encodeURIComponent(message)}`;
+}
+
+export async function activateAdmin(formData: FormData) {
   const { supabase, profile } = await requireAdmin();
-  const staffId = String(formData.get('staff_id') ?? '');
-  if (!isUuid(staffId)) redirect('/admin/settings?error=Guru%20tidak%20sah');
-  const { data: staff } = await supabase.from('staff').select('id').eq('id', staffId).eq('school_id', profile.school_id).eq('active', true).single();
-  if (!staff) redirect('/admin/settings?error=Guru%20tidak%20dijumpai');
-  const { error } = await supabase.rpc('admin_issue_guest_token', { p_staff_id: staffId });
-  if (error) redirect(`/admin/settings?error=${encodeURIComponent(error.message)}`);
+  const email = String(formData.get('email') ?? '').trim();
+  const staffIdRaw = String(formData.get('staff_id') ?? '').trim();
+  const staffId = staffIdRaw || null;
+
+  if (email.length > 254 || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+    redirect(settingsUrl('Masukkan email akaun yang sah.'));
+  }
+  if (staffId && !isUuid(staffId)) {
+    redirect(settingsUrl('Guru yang dipilih tidak sah.'));
+  }
+
+  if (staffId) {
+    const { data: staff } = await supabase
+      .from('staff')
+      .select('id')
+      .eq('id', staffId)
+      .eq('school_id', profile.school_id)
+      .eq('active', true)
+      .single();
+    if (!staff) redirect(settingsUrl('Guru tidak dijumpai atau tidak aktif.'));
+  }
+
+  const { data, error } = await supabase.rpc('admin_activate_admin_by_email', {
+    p_email: email,
+    p_staff_id: staffId,
+  });
+
+  if (error || !data?.success) {
+    redirect(settingsUrl(error?.message ?? 'Akses Admin tidak dapat diaktifkan.'));
+  }
+
   revalidatePath('/admin/settings');
-  redirect('/admin/settings?issued=1');
+  redirect(settingsUrl('Akses Admin berjaya diaktifkan.', 'activated'));
 }
