@@ -1,48 +1,66 @@
 # e-ReliefSKS
 
-Frontend rasmi **Relief SK Semangar**.
+Sistem pengurusan **Relief Guru SK Semangar**.
 
-Aplikasi ini dibina untuk:
-- keberadaan guru tanpa login melalui Guest Mode,
-- ketidakhadiran terancang dan LIVE,
-- penjanaan Relief Biasa,
-- Relief Berkampung,
-- preview dan publish jadual relief,
-- paparan jadual relief guru.
+Production: https://e-relief-sks.vercel.app/
 
-## UI direction
+## Ciri utama
 
-Mobile-first, **minimalist + block UI**.
+- Guest Mode tanpa login untuk keberadaan guru
+- ketidakhadiran terancang dan LIVE
+- multi-tarikh bagi satu sebab/program
+- Relief Biasa
+- Relief Berkampung
+- dashboard keberadaan sebenar
+- preview relief, unresolved guard dan publish
+- Supabase Auth untuk Admin
+- multi-admin activation oleh Admin aktif
+- mobile-first minimalist + block UI
 
-- putih + teal + navy
-- kad modular
-- hierarchy jelas
-- status chips
-- shadow ringan
-- responsive untuk telefon, tablet dan desktop
-- foto dan logo sebenar SK Semangar
-
-## Routes scaffold
+## Route utama
 
 - `/` Landing
-- `/guest/[token]` Guest Mode keberadaan
-- `/guest/[token]/success` Guest success
-- `/admin/login` Admin login
+- `/guest` Keberadaan Guru
+- `/guest/success` Resit Guest
+- `/admin/login` Login Admin
+- `/admin/signup` Daftar akaun Auth
 - `/admin` Dashboard
-- `/admin/keberadaan` Mingguan
-- `/admin/relief/new` Jana relief
-- `/admin/relief/[runId]` Preview relief
-- `/relief/today` Jadual relief guru
+- `/admin/keberadaan` Keberadaan
+- `/admin/relief/new` Jana Relief
+- `/admin/relief/[runId]` Preview / Publish
+- `/admin/settings` Tetapan + Multi-Admin
+- `/relief/today` Jadual Relief diterbitkan
+
+Route Guest token lama `/guest/[token]` dikekalkan hanya sebagai redirect ke `/guest`.
+
+## Environment
+
+Salin `.env.example` ke `.env.local`.
+
+```env
+NEXT_PUBLIC_SUPABASE_URL=
+NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=
+NEXT_PUBLIC_SITE_URL=https://e-relief-sks.vercel.app
+```
+
+Jangan letakkan service-role atau secret key pada frontend.
 
 ## Development
 
 ```bash
-npm install
+npm ci
+npm run typecheck
+npm test
+npm run build
 npm run dev
 ```
 
-Copy `.env.example` to `.env.local` when Supabase wiring starts.
+## Production notes
 
-## Status
-
-STEP 8A UI scaffold. Data on pages is currently mock data. Next milestone is wiring the existing Supabase RPCs and auth.
+- Supabase project: `lhjgdvpsvscghecwuwho`
+- Vercel project: `e-relief-sks`
+- Production branch: `main`
+- Guest Mode rasmi ialah borang pilih nama di `/guest`
+- Signup tidak memberikan akses Admin secara automatik
+- Admin aktif boleh mengaktifkan Admin lain di `/admin/settings`
+- Relief Engine dan schema core tidak diubah oleh frontend hardening
